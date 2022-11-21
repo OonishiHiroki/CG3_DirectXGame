@@ -1,22 +1,20 @@
 ﻿#include "GameScene.h"
+#include "ParticleManager.h"
 #include <cassert>
 
 using namespace DirectX;
 
-GameScene::GameScene()
-{
+GameScene::GameScene() {
 }
 
-GameScene::~GameScene()
-{
+GameScene::~GameScene() {
 	delete spriteBG;
 	delete particleMan;
 	delete sprite1;
 	delete sprite2;
 }
 
-void GameScene::Initialize(DirectXCommon* dxCommon, Input* input)
-{
+void GameScene::Initialize(DirectXCommon* dxCommon, Input* input) {
 	// nullptrチェック
 	assert(dxCommon);
 	assert(input);
@@ -44,11 +42,32 @@ void GameScene::Initialize(DirectXCommon* dxCommon, Input* input)
 	//座標{0,0}に、テクスチャ2番のスプライトを生成
 	sprite1 = Sprite::Create(2, { 0,0 });
 	//座標{500,500}に、テクスチャ2番のスプライトを生成
-	sprite2 = Sprite::Create(2, { 500,500 }, { 1,0,0,1 }, { 0,0 },false,true);
+	sprite2 = Sprite::Create(2, { 500,500 }, { 1,0,0,1 }, { 0,0 }, false, true);
+
+	for (int i = 0; i < 100; i++) {
+		//X,Y,Z全て[-5.0f,+5.0f]でランダムに分布
+		const float md_pos = 10.0f;
+		XMFLOAT3 pos{};
+		pos.x = (float)rand() / RAND_MAX * md_pos - md_pos / 2.0f;
+		pos.y = (float)rand() / RAND_MAX * md_pos - md_pos / 2.0f;
+		pos.z = (float)rand() / RAND_MAX * md_pos - md_pos / 2.0f;
+		//X,Y,Z全て[-0.05f,*0.05f]でランダムに分布
+		const float md_vel = 0.1f;
+		XMFLOAT3 vel{};
+		vel.x = (float)rand() / RAND_MAX * md_vel - md_vel / 2.0f;
+		vel.y = (float)rand() / RAND_MAX * md_vel - md_vel / 2.0f;
+		vel.z = (float)rand() / RAND_MAX * md_vel - md_vel / 2.0f;
+		//重力に見立ててYのみ[-0.001f,0]でランダムに分布
+		XMFLOAT3 acc{};
+		const float md_acc = 0.001f;
+		acc.y = -(float)rand() / RAND_MAX * md_acc;
+
+		//追加
+		particleMan->Add(120, pos, vel, acc);
+	}
 }
 
-void GameScene::Update()
-{
+void GameScene::Update() {
 	//// オブジェクト移動
 	//if (input->PushKey(DIK_UP) || input->PushKey(DIK_DOWN) || input->PushKey(DIK_RIGHT) || input->PushKey(DIK_LEFT))
 	//{
@@ -102,8 +121,7 @@ void GameScene::Update()
 	particleMan->Update();
 }
 
-void GameScene::Draw()
-{
+void GameScene::Draw() {
 	// コマンドリストの取得
 	ID3D12GraphicsCommandList* cmdList = dxCommon->GetCommandList();
 
@@ -131,7 +149,7 @@ void GameScene::Draw()
 
 	// 3Dオブクジェクトの描画
 	particleMan->Draw();
-	
+
 
 	/// <summary>
 	/// ここに3Dオブジェクトの描画処理を追加できる
