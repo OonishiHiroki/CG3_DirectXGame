@@ -799,10 +799,7 @@ void ParticleManager::Update() {
 	//}
 
 	//寿命が尽きたときパーティクルを全削除
-	particles.remove_if([](Particle& x) {
-		return x.frame >= x.num_frame;
-						}
-	);
+	particles.remove_if([](Particle& x) {return x.frame >= x.num_frame;});
 
 	//全パーティクル更新
 	for (std::forward_list<Particle>::iterator it = particles.begin();
