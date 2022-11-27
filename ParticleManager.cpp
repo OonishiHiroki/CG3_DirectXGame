@@ -172,7 +172,7 @@ void ParticleManager::InitializeCamera(int window_width, int window_height) {
 		XMLoadFloat3(&target),
 		XMLoadFloat3(&up));*/
 
-	//ビュー行列の計算
+		//ビュー行列の計算
 	UpdateViewMatrix();
 
 	// 平行投影による射影行列の生成
@@ -276,11 +276,12 @@ void ParticleManager::InitializeGraphicsPipeline() {
 		//	D3D12_APPEND_ALIGNED_ELEMENT,
 		//	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
 		//},
-		//{ // uv座標(1行で書いたほうが見やすい)
-		//	"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
-		//	D3D12_APPEND_ALIGNED_ELEMENT,
-		//	D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
-		//},
+
+		//uv座標(1行で書いたほうが見やすい)
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0,
+			D3D12_APPEND_ALIGNED_ELEMENT,
+			D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0
+		},
 	};
 
 	// グラフィックスパイプラインの流れを設定
@@ -628,23 +629,23 @@ void ParticleManager::CreateModel() {
 		&heapProps, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
 		IID_PPV_ARGS(&indexBuff));*/
 
-	// インデックスバッファへのデータ転送
-	//unsigned short* indexMap = nullptr;
-	//result = indexBuff->Map(0, nullptr, (void**)&indexMap);
-	//if (SUCCEEDED(result)) {
+		// インデックスバッファへのデータ転送
+		//unsigned short* indexMap = nullptr;
+		//result = indexBuff->Map(0, nullptr, (void**)&indexMap);
+		//if (SUCCEEDED(result)) {
 
-	//	// 全インデックスに対して
-	//	for (int i = 0; i < _countof(indices); i++) {
-	//		indexMap[i] = indices[i];	// インデックスをコピー
-	//	}
+		//	// 全インデックスに対して
+		//	for (int i = 0; i < _countof(indices); i++) {
+		//		indexMap[i] = indices[i];	// インデックスをコピー
+		//	}
 
-	//	indexBuff->Unmap(0, nullptr);
-	//}
+		//	indexBuff->Unmap(0, nullptr);
+		//}
 
-	// インデックスバッファビューの作成
-	/*ibView.BufferLocation = indexBuff->GetGPUVirtualAddress();
-	ibView.Format = DXGI_FORMAT_R16_UINT;
-	ibView.SizeInBytes = sizeof(indices);*/
+		// インデックスバッファビューの作成
+		/*ibView.BufferLocation = indexBuff->GetGPUVirtualAddress();
+		ibView.Format = DXGI_FORMAT_R16_UINT;
+		ibView.SizeInBytes = sizeof(indices);*/
 }
 
 void ParticleManager::UpdateViewMatrix() {
@@ -688,7 +689,7 @@ void ParticleManager::UpdateViewMatrix() {
 	matCameraRot.r[0] = cameraAxisX;
 	matCameraRot.r[1] = cameraAxisY;
 	matCameraRot.r[2] = cameraAxisZ;
-	matCameraRot.r[3] = XMVectorSet(0,0,0,1);
+	matCameraRot.r[3] = XMVectorSet(0, 0, 0, 1);
 
 	//転置により逆行列
 	matView = XMMatrixTranspose(matCameraRot);
@@ -711,7 +712,7 @@ void ParticleManager::UpdateViewMatrix() {
 	matBillboard.r[0] = cameraAxisX;
 	matBillboard.r[1] = cameraAxisY;
 	matBillboard.r[2] = cameraAxisZ;
-	matBillboard.r[3] = XMVectorSet(0,0,0,1);
+	matBillboard.r[3] = XMVectorSet(0, 0, 0, 1);
 #pragma region
 
 #pragma region Y軸回りビルボード行列の計算
@@ -729,11 +730,11 @@ void ParticleManager::UpdateViewMatrix() {
 	matBillboardY.r[0] = ybillCameraAxisX;
 	matBillboardY.r[1] = ybillCameraAxisY;
 	matBillboardY.r[2] = ybillCameraAxisZ;
-	matBillboardY.r[3] = XMVectorSet(0,0,0,1);
+	matBillboardY.r[3] = XMVectorSet(0, 0, 0, 1);
 #pragma endregion
 }
 
-void ParticleManager::Add(int life, XMFLOAT3 position, XMFLOAT3 velocity, XMFLOAT3 accel) {
+void ParticleManager::Add(int life, XMFLOAT3 position, XMFLOAT3 velocity, XMFLOAT3 accel,float start_scale, float end_scale) {
 	//リストに要素を追加
 	particles.emplace_front();
 	//追加した要素の参照
@@ -743,6 +744,8 @@ void ParticleManager::Add(int life, XMFLOAT3 position, XMFLOAT3 velocity, XMFLOA
 	p.velocity = velocity;
 	p.accel = accel;
 	p.num_frame = life;
+	p.s_scale = start_scale;
+	p.e_scale = end_scale;
 }
 
 bool ParticleManager::Initialize() {
@@ -798,7 +801,7 @@ void ParticleManager::Update() {
 	//寿命が尽きたときパーティクルを全削除
 	particles.remove_if([](Particle& x) {
 		return x.frame >= x.num_frame;
-		}
+						}
 	);
 
 	//全パーティクル更新
@@ -811,10 +814,18 @@ void ParticleManager::Update() {
 		it->velocity = it->velocity + it->accel;
 		//速度による移動
 		it->position = it->position + it->velocity;
+
+		//進行度を0~1の範囲に換算
+		float f = (float)it->frame / it->num_frame;
+		//スケールの線形
+		it->scale = (it->e_scale - it->s_scale) * f;
+		it->scale += it->s_scale;
 	}
 	//頂点バッファへのデータ転送
 	VertexPos* vertMap = nullptr;
 	result = vertBuff->Map(0, nullptr, (void**)&vertMap);
+
+	
 
 	if (SUCCEEDED(result)) {
 		//パーティクルの情報を1つずつ反映
@@ -823,6 +834,8 @@ void ParticleManager::Update() {
 			vertMap->pos = it->position;
 			//次の頂点へ
 			vertMap++;
+			//スケール
+			vertMap->scale = it->scale;
 		}
 		vertBuff->Unmap(0, nullptr);
 	}
@@ -859,5 +872,5 @@ void ParticleManager::Draw() {
 	//cmdList->DrawIndexedInstanced(3, 1, 0, 0, 0);
 	//cmdList->DrawInstanced(_countof(vertices), 1, 0, 0);
 
-	cmdList->DrawInstanced((UINT)std::distance(particles.begin(),particles.end()), 1, 0, 0);
+	cmdList->DrawInstanced((UINT)std::distance(particles.begin(), particles.end()), 1, 0, 0);
 }
