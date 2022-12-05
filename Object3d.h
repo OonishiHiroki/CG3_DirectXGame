@@ -217,8 +217,21 @@ public: // メンバ関数
 	/// <param name="position">座標</param>
 	void SetPosition(const XMFLOAT3& position) { this->position = position; }
 
+	/// <summary>
+	/// 座標の取得
+	/// </summary>
+	/// <returns>座標</returns>
+	const XMFLOAT3& GetPosition1() const { return position1; }
+
+	/// <summary>
+	/// 座標の設定
+	/// </summary>
+	/// <param name="position">座標</param>
+	void SetPosition1(const XMFLOAT3& position) { this->position1 = position; }
+
 private: // メンバ変数
 	ComPtr<ID3D12Resource> constBuff; // 定数バッファ
+	ComPtr<ID3D12Resource> constBuff1; // 定数バッファ
 	// 色
 	XMFLOAT4 color = { 1,1,1,1 };
 	// ローカルスケール
@@ -227,8 +240,10 @@ private: // メンバ変数
 	XMFLOAT3 rotation = { 0,0,0 };
 	// ローカル座標
 	XMFLOAT3 position = { 0,0,0 };
+	XMFLOAT3 position1 = { 20,0,0 };
 	// ローカルワールド変換行列
 	XMMATRIX matWorld;
+	XMMATRIX matWorld1;
 	// 親オブジェクト
 	Object3d* parent = nullptr;
 };

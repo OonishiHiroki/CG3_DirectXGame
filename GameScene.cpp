@@ -54,6 +54,7 @@ void GameScene::Update()
 	{
 		// 現在の座標を取得
 		XMFLOAT3 position = object3d->GetPosition();
+		XMFLOAT3 position1 = object3d->GetPosition1();
 
 		// 移動後の座標を計算
 		if (input->PushKey(DIK_UP)) { position.y += 1.0f; }
@@ -61,8 +62,15 @@ void GameScene::Update()
 		if (input->PushKey(DIK_RIGHT)) { position.x += 1.0f; }
 		else if (input->PushKey(DIK_LEFT)) { position.x -= 1.0f; }
 
+		// 移動後の座標を計算
+		if (input->PushKey(DIK_UP)) { position1.y += 1.0f; }
+		else if (input->PushKey(DIK_DOWN)) { position1.y -= 1.0f; }
+		if (input->PushKey(DIK_RIGHT)) { position1.x += 1.0f; }
+		else if (input->PushKey(DIK_LEFT)) { position1.x -= 1.0f; }
+
 		// 座標の変更を反映
 		object3d->SetPosition(position);
+		object3d->SetPosition1(position1);
 	}
 
 	//スペースキーを押したら

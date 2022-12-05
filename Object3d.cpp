@@ -716,6 +716,14 @@ bool Object3d::Initialize() {
 		IID_PPV_ARGS(&constBuff));
 	assert(SUCCEEDED(result));
 
+	// 定数バッファの生成
+	result = device->CreateCommittedResource(
+		&heapProps, // アップロード可能
+		D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+		IID_PPV_ARGS(&constBuff1));
+	assert(SUCCEEDED(result));
+
+
 	return true;
 }
 
@@ -733,12 +741,30 @@ void Object3d::Update() {
 
 	// ワールド行列の合成
 	matWorld = XMMatrixIdentity(); // 変形をリセット
-
-
 	matWorld *= matScale; // ワールド行列にスケーリングを反映
 	matWorld *= matRot; // ワールド行列に回転を反映
 	matWorld *= matTrans; // ワールド行列に平行移動を反映
 
+	XMMATRIX matScale1, matRot1, matTrans1;
+
+	// スケール、回転、平行移動行列の計算
+	matScale1 = XMMatrixScaling(scale.x, scale.y, scale.z);
+	matRot1 = XMMatrixIdentity();
+	matRot1 *= XMMatrixRotationZ(XMConvertToRadians(rotation.z));
+	matRot1 *= XMMatrixRotationX(XMConvertToRadians(rotation.x));
+	matRot1 *= XMMatrixRotationY(XMConvertToRadians(rotation.y));
+	matTrans1 = XMMatrixTranslation(position1.x,position1.y, position1.z);
+
+
+	// ワールド行列の合成
+	matWorld1 = XMMatrixIdentity(); // 変形をリセット
+	matWorld1 *= matScale1; // ワールド行列にスケーリングを反映
+	matWorld1 *= matRot1; // ワールド行列に回転を反映
+	matWorld1 *= matTrans1; // ワールド行列に平行移動を反映
+
+
+	//matWorld *= matBillboard;	//ビルボード行列を掛ける
+	matWorld1 *= matBillboard;	//ビルボード行列を掛ける
 	//matWorld *= matBillboardY;	//ビルボード行列を掛ける
 
 	// 親オブジェクトがあれば
@@ -753,6 +779,13 @@ void Object3d::Update() {
 	constMap->color = color;
 	constMap->mat = matWorld * matView * matProjection;	// 行列の合成
 	constBuff->Unmap(0, nullptr);
+
+	// 定数バッファへデータ転送
+	ConstBufferData* constMap1 = nullptr;
+	result = constBuff1->Map(0, nullptr, (void**)&constMap1);
+	constMap1->color = color;
+	constMap1->mat = matWorld1 * matView * matProjection;	// 行列の合成
+	constBuff1->Unmap(0, nullptr);
 }
 
 void Object3d::Draw() {
@@ -773,6 +806,11 @@ void Object3d::Draw() {
 	cmdList->SetGraphicsRootConstantBufferView(0, constBuff->GetGPUVirtualAddress());
 	// シェーダリソースビューをセット
 	cmdList->SetGraphicsRootDescriptorTable(1, gpuDescHandleSRV);
+	// 描画コマンド
+	cmdList->DrawIndexedInstanced(_countof(indices), 1, 0, 0, 0);
+
+	// 定数バッファビューをセット
+	cmdList->SetGraphicsRootConstantBufferView(0, constBuff1->GetGPUVirtualAddress());
 	// 描画コマンド
 	cmdList->DrawIndexedInstanced(_countof(indices), 1, 0, 0, 0);
 }
